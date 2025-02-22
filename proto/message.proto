@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package rpc;
+
+option go_package = "github.com/zzhunght/kat-mq/rpc";
+
+message PublishMessage{
+    string content = 1;
+    string topic = 2;
+}
+
+message PublishResponse {
+    bool success = 1;
+}
+
+
+message Subcribe {
+    string topic = 1;
+}
+
+message Message {
+    string content = 1;
+}
+
+
+
+
+service MessageService {
+    rpc Publish(PublishMessage) returns (PublishResponse);
+    rpc Subscribe(Subcribe) returns (stream Message);
+}
