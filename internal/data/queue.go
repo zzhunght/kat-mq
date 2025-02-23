@@ -2,7 +2,6 @@ package data
 
 import (
 	"errors"
-	"log"
 	"sync"
 )
 
@@ -10,6 +9,7 @@ var (
 	ErrQueueEmpty = errors.New("queue empty")
 )
 
+// queue message là 1 hashmap chứa topic và message của từng topic
 type Queue struct {
 	message map[string][]string
 	mu      sync.Mutex
@@ -22,7 +22,7 @@ func NewQueue() *Queue {
 func (q *Queue) Add(msg string, topic string) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
-	log.Printf("Adding message: %s , to topic: %s", msg, topic)
+	// log.Printf("Adding message: %s , to topic: %s", msg, topic)
 	if msg != "" {
 		q.message[topic] = append(q.message[topic], msg)
 	}

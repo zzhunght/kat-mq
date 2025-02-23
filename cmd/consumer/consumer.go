@@ -20,7 +20,7 @@ func main() {
 
 	client := rpc.NewMessageServiceClient(conn)
 
-	messages, err := client.Subscribe(context.Background(), &rpc.Subcribe{Topic: "*"})
+	messages, err := client.Consume(context.Background(), &rpc.Subcribe{Topic: "*", Group: "g1"})
 
 	if err != nil {
 		log.Fatalf("Failed to subscribe: %v", err)

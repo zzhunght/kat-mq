@@ -26,7 +26,14 @@ func main() {
 			Content: fmt.Sprintf("Hello, gRPC! %v", i),
 			Topic:   "*",
 		}
-		client.Publish(context.Background(), message)
+		resp, err := client.Publish(context.Background(), message)
+		if err != nil {
+			log.Fatalf("Failed to publish message: %v", err)
+		}
+
+		if resp.Success {
+			log.Printf(" publish message: %v", message)
+		}
 	}
 
 	log.Println("Message published successfully!")

@@ -16,6 +16,7 @@ message PublishResponse {
 
 message Subcribe {
     string topic = 1;
+    string group = 2;
 }
 
 message Message {
@@ -27,5 +28,5 @@ message Message {
 
 service MessageService {
     rpc Publish(PublishMessage) returns (PublishResponse);
-    rpc Subscribe(Subcribe) returns (stream Message);
+    rpc Consume(Subcribe) returns (stream Message);
 }

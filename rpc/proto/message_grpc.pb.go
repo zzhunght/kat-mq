@@ -19,8 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MessageService_Publish_FullMethodName   = "/rpc.MessageService/Publish"
-	MessageService_Subscribe_FullMethodName = "/rpc.MessageService/Subscribe"
+	MessageService_Publish_FullMethodName = "/rpc.MessageService/Publish"
+	MessageService_Consume_FullMethodName = "/rpc.MessageService/Consume"
 )
 
 // MessageServiceClient is the client API for MessageService service.
@@ -28,7 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MessageServiceClient interface {
 	Publish(ctx context.Context, in *PublishMessage, opts ...grpc.CallOption) (*PublishResponse, error)
-	Subscribe(ctx context.Context, in *Subcribe, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Message], error)
+	Consume(ctx context.Context, in *Subcribe, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Message], error)
 }
 
 type messageServiceClient struct {
@@ -49,9 +49,9 @@ func (c *messageServiceClient) Publish(ctx context.Context, in *PublishMessage, 
 	return out, nil
 }
 
-func (c *messageServiceClient) Subscribe(ctx context.Context, in *Subcribe, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Message], error) {
+func (c *messageServiceClient) Consume(ctx context.Context, in *Subcribe, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Message], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &MessageService_ServiceDesc.Streams[0], MessageService_Subscribe_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &MessageService_ServiceDesc.Streams[0], MessageService_Consume_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -66,14 +66,14 @@ func (c *messageServiceClient) Subscribe(ctx context.Context, in *Subcribe, opts
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type MessageService_SubscribeClient = grpc.ServerStreamingClient[Message]
+type MessageService_ConsumeClient = grpc.ServerStreamingClient[Message]
 
 // MessageServiceServer is the server API for MessageService service.
 // All implementations must embed UnimplementedMessageServiceServer
 // for forward compatibility.
 type MessageServiceServer interface {
 	Publish(context.Context, *PublishMessage) (*PublishResponse, error)
-	Subscribe(*Subcribe, grpc.ServerStreamingServer[Message]) error
+	Consume(*Subcribe, grpc.ServerStreamingServer[Message]) error
 	mustEmbedUnimplementedMessageServiceServer()
 }
 
@@ -87,8 +87,8 @@ type UnimplementedMessageServiceServer struct{}
 func (UnimplementedMessageServiceServer) Publish(context.Context, *PublishMessage) (*PublishResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Publish not implemented")
 }
-func (UnimplementedMessageServiceServer) Subscribe(*Subcribe, grpc.ServerStreamingServer[Message]) error {
-	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
+func (UnimplementedMessageServiceServer) Consume(*Subcribe, grpc.ServerStreamingServer[Message]) error {
+	return status.Errorf(codes.Unimplemented, "method Consume not implemented")
 }
 func (UnimplementedMessageServiceServer) mustEmbedUnimplementedMessageServiceServer() {}
 func (UnimplementedMessageServiceServer) testEmbeddedByValue()                        {}
@@ -129,16 +129,16 @@ func _MessageService_Publish_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MessageService_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _MessageService_Consume_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(Subcribe)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(MessageServiceServer).Subscribe(m, &grpc.GenericServerStream[Subcribe, Message]{ServerStream: stream})
+	return srv.(MessageServiceServer).Consume(m, &grpc.GenericServerStream[Subcribe, Message]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type MessageService_SubscribeServer = grpc.ServerStreamingServer[Message]
+type MessageService_ConsumeServer = grpc.ServerStreamingServer[Message]
 
 // MessageService_ServiceDesc is the grpc.ServiceDesc for MessageService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -154,8 +154,8 @@ var MessageService_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Subscribe",
-			Handler:       _MessageService_Subscribe_Handler,
+			StreamName:    "Consume",
+			Handler:       _MessageService_Consume_Handler,
 			ServerStreams: true,
 		},
 	},
