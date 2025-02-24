@@ -9,18 +9,22 @@ import (
 
 type consumerGroup map[string][]chan string
 
-type subcribeTopic map[string]consumerGroup
+type consumer map[string]consumerGroup
 
 type server struct {
 	queue          *data.Queue
-	subcribersChan subcribeTopic
+	consumer       consumer
 	mu             sync.Mutex
+	watcher        map[string]chan string
+	topicProcessor map[string]int
 	rpc.UnimplementedMessageServiceServer
 }
 
 func NewServer() *server {
 	return &server{
 		queue:          data.NewQueue(),
-		subcribersChan: make(subcribeTopic),
+		consumer:       make(consumer),
+		watcher:        map[string]chan string{},
+		topicProcessor: map[string]int{},
 	}
 }
