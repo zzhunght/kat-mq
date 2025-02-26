@@ -1,14 +1,37 @@
-package main
+package katmq
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 
-	rpc "github.com/zzhunght/kat-mq/rpc/proto"
+	rpc "github.com/zzhunght/kat-mq/internal/proto"
 )
 
-func (s *server) Publish(ctx context.Context, msg *rpc.PublishMessage) (*rpc.PublishResponse, error) {
+type consumerGroup map[string][]chan string
+
+type consumer map[string]consumerGroup
+
+type Broker struct {
+	queue          *Queue
+	consumer       consumer
+	mu             sync.Mutex
+	watcher        map[string]chan string
+	topicProcessor map[string]int
+	rpc.UnimplementedMessageServiceServer
+}
+
+func NewBroker() *Broker {
+	return &Broker{
+		queue:          NewQueue(),
+		consumer:       make(consumer),
+		watcher:        map[string]chan string{},
+		topicProcessor: map[string]int{},
+	}
+}
+
+func (s *Broker) Publish(ctx context.Context, msg *rpc.PublishMessage) (*rpc.PublishResponse, error) {
 	watcher, exists := s.watcher[msg.Topic]
 
 	if !exists {
@@ -21,7 +44,7 @@ func (s *server) Publish(ctx context.Context, msg *rpc.PublishMessage) (*rpc.Pub
 	return &rpc.PublishResponse{Success: true}, nil
 }
 
-func (s *server) Consume(request *rpc.Subcribe, stream rpc.MessageService_ConsumeServer) error {
+func (s *Broker) Consume(request *rpc.Subcribe, stream rpc.MessageService_ConsumeServer) error {
 	fmt.Printf("Topic: %v , Group: %v \n", request.Topic, request.Group)
 	subcribeChan := make(chan string, 10)
 
@@ -49,7 +72,7 @@ func (s *server) Consume(request *rpc.Subcribe, stream rpc.MessageService_Consum
 	}
 }
 
-func (s *server) subcribeToTopic(subCh chan string, topic string, group string) error {
+func (s *Broker) subcribeToTopic(subCh chan string, topic string, group string) error {
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -83,14 +106,14 @@ func (s *server) subcribeToTopic(subCh chan string, topic string, group string) 
 	return nil
 }
 
-func (s *server) processTopic(topic string) {
+func (s *Broker) processTopic(topic string) {
 
 	for {
 		s.sendToSubscriber(topic)
 	}
 }
 
-func (s *server) startWatcher(topic string, ch chan string) {
+func (s *Broker) startWatcher(topic string, ch chan string) {
 
 	s.watcher[topic] = ch
 
@@ -100,7 +123,7 @@ func (s *server) startWatcher(topic string, ch chan string) {
 	}
 }
 
-func (s *server) unsubcribeFromTopic(topic string, group string, ch chan string) error {
+func (s *Broker) unsubcribeFromTopic(topic string, group string, ch chan string) error {
 	log.Printf("Unsubscribe from topic: %v, group: %v\n", topic, group)
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -136,7 +159,7 @@ func (s *server) unsubcribeFromTopic(topic string, group string, ch chan string)
 	return nil
 }
 
-func (s *server) sendToSubscriber(topic string) {
+func (s *Broker) sendToSubscriber(topic string) {
 	s.mu.Lock()
 	subscribers, ok := s.consumer[topic]
 	s.mu.Unlock()

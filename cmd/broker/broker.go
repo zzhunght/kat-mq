@@ -5,7 +5,8 @@ import (
 	"log"
 	"net"
 
-	rpc "github.com/zzhunght/kat-mq/rpc/proto"
+	katmq "github.com/zzhunght/kat-mq"
+	rpc "github.com/zzhunght/kat-mq/internal/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -19,7 +20,7 @@ func main() {
 		panic(err)
 	}
 
-	server := NewServer()
+	server := katmq.NewBroker()
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 	rpc.RegisterMessageServiceServer(grpcServer, server)
